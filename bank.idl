@@ -1,0 +1,26 @@
+module Bank
+{
+
+  typedef sequence<int> AccountList;
+
+  enum OperationResult
+  {
+    ERROR_ACCOUNT_INEXISTANT,
+    ERROR_ACCOUNT_EMPTY,
+    ERROR_AMOUNT_INVALID,
+    ERROR_ACCESS_DENIED,
+    ERROR_ACCOUNT_DEST_INEXISTANT
+  };
+
+  interface IBank
+  {
+    int createClient();
+    int openAccount(in int clientId);
+    OperationResult withdraw(in int clientId,in int accountId, in double amount);
+    OperationResult deposit(in int clientId,in int accountId, in double amount);
+    double getAccountBalance(in int clientId, in int accountId);
+    AccountList getAccountIds(in int clientId);
+    OperationResult transfer(in int clientId, in int accountIdSrc, in int accountIdDest, in double amount);
+  };
+};
+    
