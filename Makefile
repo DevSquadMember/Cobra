@@ -9,12 +9,12 @@ compile_code:
 	javac server/src/*.java
 
 run_nameserver:
-	tnameserv -ORBInitialPort 2810
+	tnameserv -ORBInitialPort 2809
 
 run_server:
-	java server.src.Server -ORBInitRef NameService=corbaloc::host:2810/NameService
+	java server.src.Server -ORBInitRef NameService=corbaloc::localhost:2809/NameService
 
 run_client:
-	java client.src.Client -ORBInitRef NameService=corbaloc::host:2810/NameService
+	java client.src.Client -ORBInitRef NameService=corbaloc::localhost:2809/NameService
 
 # -fclient -fserver -fall : pour générer les parties de l'IDL
