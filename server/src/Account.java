@@ -1,3 +1,5 @@
+package server.src;
+
 public class Account {
 
     /** Identifiant unique du compte */

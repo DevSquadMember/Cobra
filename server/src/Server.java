@@ -1,10 +1,15 @@
-import org.omg.CORBA.*;
-import org.omg.PortableServer.*;
-import org.omg.PortableServer.POA;
-import java.util.Properties;
-import org.omg.CosNaming.*;
+package server.src;
 
-public class BankServer
+import BankIDL.IBank;
+import BankIDL.IBankHelper;
+import org.omg.CORBA.ORB;
+import org.omg.CosNaming.NameComponent;
+import org.omg.CosNaming.NamingContextExt;
+import org.omg.CosNaming.NamingContextExtHelper;
+import org.omg.PortableServer.POA;
+import org.omg.PortableServer.POAHelper;
+
+public class Server
 {
 public static void main(String args[]) throws Exception
     {
@@ -19,11 +24,11 @@ public static void main(String args[]) throws Exception
 	NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
 
 
-	BankImpl bankImpl = new BankImpl();
+	Bank bankImpl = new Bank();
 
 	objRef = rootpoa.servant_to_reference(bankImpl);
 
-	Bank bankRef = EchoHelper.narrow(objRef);
+	IBank bankRef = IBankHelper.narrow(objRef);
 
 	NameComponent path[ ] = ncRef.to_name("bank.bank");
 	ncRef.rebind(path, bankRef);

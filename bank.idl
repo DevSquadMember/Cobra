@@ -1,9 +1,9 @@
-module Bank
+module BankIDL
 {
 
   typedef sequence<long> AccountList;
 
-  enum OperationResult
+  /*enum OperationResult
   {
     SUCCESS,
     ERROR_ACCOUNT_INEXISTANT,
@@ -11,17 +11,17 @@ module Bank
     ERROR_AMOUNT_INVALID,
     ERROR_ACCESS_DENIED,
     ERROR_ACCOUNT_DEST_INEXISTANT
-  };
+  };*/
 
   interface IBank
   {
     long createClient();
     long openAccount(in long clientId);
-    OperationResult withdraw(in long clientId,in long accountId, in double amount);
-    OperationResult deposit(in long clientId,in long accountId, in double amount);
+    /*OperationResult withdraw(in long clientId,in long accountId, in double amount);
+    OperationResult deposit(in long clientId,in long accountId, in double amount);*/
     double getAccountBalance(in long clientId, in long accountId);
     AccountList getAccountIds(in long clientId);
-    OperationResult transfer(in long clientId, in long accountIdSrc, in long accountIdDest, in double amount);
+    //OperationResult transfer(in long clientId, in long accountIdSrc, in long accountIdDest, in double amount);
   };
 };
     
