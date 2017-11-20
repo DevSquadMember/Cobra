@@ -9,30 +9,29 @@ import org.omg.CosNaming.NamingContextExtHelper;
 import org.omg.PortableServer.POA;
 import org.omg.PortableServer.POAHelper;
 
-public class Server
-{
-public static void main(String args[]) throws Exception
-    {
-	ORB orb = ORB.init(args, null);
+public class Server {
+    public static void main(String args[]) throws Exception {
+        // Initialisation d'ORB
+        ORB orb = ORB.init(args, null);
 
-	org.omg.CORBA.Object objRef = orb.resolve_initial_references("RootPOA");
-	POA rootpoa = POAHelper.narrow(objRef);
-	rootpoa.the_POAManager().activate();
+        org.omg.CORBA.Object objRef = orb.resolve_initial_references("RootPOA");
+        POA rootpoa = POAHelper.narrow(objRef);
+        rootpoa.the_POAManager().activate();
 
-
-	objRef = orb.resolve_initial_references("NameService");
-	NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+        objRef = orb.resolve_initial_references("NameService");
+        NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
 
 
-	Bank bankImpl = new Bank();
+        /** CODE APPLICATIF DU SERVER **/
+        Bank bank = new Bank();
 
-	objRef = rootpoa.servant_to_reference(bankImpl);
+        objRef = rootpoa.servant_to_reference(bank);
 
-	IBank bankRef = IBankHelper.narrow(objRef);
+        IBank bankRef = IBankHelper.narrow(objRef);
 
-	NameComponent path[ ] = ncRef.to_name("bank.bank");
-	ncRef.rebind(path, bankRef);
+        NameComponent path[ ] = ncRef.to_name("bank.bank");
+        ncRef.rebind(path, bankRef);
 
-	orb.run();
+        orb.run();
     }
 }

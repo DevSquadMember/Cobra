@@ -6,10 +6,8 @@ import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
 import org.omg.CosNaming.NamingContextExtHelper;
 
-public class Client
-{
-    public static void main(String args[]) throws Exception
-    {
+public class Client {
+    public static void main(String args[]) throws Exception {
         org.omg.CORBA.Object objRef;
 
         ORB orb = ORB.init(args, null);
@@ -19,15 +17,15 @@ public class Client
 
         objRef = ncRef.resolve_str("bank.bank");
 
-        IBank bankRef = IBankHelper.narrow(objRef);
+        IBank bank = IBankHelper.narrow(objRef);
 
-        int myId = bankRef.createClient();
-        int myAccount = bankRef.openAccount(myId);
+        int myId = bank.createClient();
+        int myAccount = bank.openAccount(myId);
 
-        /*System.out.println(bankRef.deposit(myId,myAccount,100));
-        System.out.println(bankRef.withdraw(myId,myAccount,150));
-        System.out.println(bankRef.withdraw(myId,myAccount,50));*/
-        System.out.println(bankRef.getAccountBalance(myId,myAccount));
+        System.out.println(bank.deposit(myId, myAccount,100));
+        System.out.println(bank.withdraw(myId, myAccount,150));
+        System.out.println(bank.withdraw(myId, myAccount,50));
+        System.out.println(bank.getAccountBalance(myId, myAccount));
     }
 }
 	
