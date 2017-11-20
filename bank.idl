@@ -1,7 +1,7 @@
 module Bank
 {
 
-  typedef sequence<int> AccountList;
+  typedef sequence<long> AccountList;
 
   enum OperationResult
   {
@@ -14,13 +14,13 @@ module Bank
 
   interface IBank
   {
-    int createClient();
-    int openAccount(in int clientId);
-    OperationResult withdraw(in int clientId,in int accountId, in double amount);
-    OperationResult deposit(in int clientId,in int accountId, in double amount);
-    double getAccountBalance(in int clientId, in int accountId);
-    AccountList getAccountIds(in int clientId);
-    OperationResult transfer(in int clientId, in int accountIdSrc, in int accountIdDest, in double amount);
+    long createClient();
+    long openAccount(in long clientId);
+    OperationResult withdraw(in long clientId,in long accountId, in double amount);
+    OperationResult deposit(in long clientId,in long accountId, in double amount);
+    double getAccountBalance(in long clientId, in long accountId);
+    AccountList getAccountIds(in long clientId);
+    OperationResult transfer(in long clientId, in long accountIdSrc, in long accountIdDest, in double amount);
   };
 };
     
