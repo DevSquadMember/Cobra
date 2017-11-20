@@ -5,6 +5,7 @@ module Bank
 
   enum OperationResult
   {
+    SUCCESS,
     ERROR_ACCOUNT_INEXISTANT,
     ERROR_ACCOUNT_EMPTY,
     ERROR_AMOUNT_INVALID,
