@@ -5,8 +5,8 @@ compile:
 
 compile_code:
 	javac BankIDL/*.java
-	javac client/src/*.java
-	javac server/src/*.java
+	javac -cp junit-4.10.jar:. client/src/*.java
+	javac -cp junit-4.10.jar:. server/src/*.java
 
 run_nameserver:
 	tnameserv -ORBInitialPort 2809
@@ -17,4 +17,12 @@ run_server:
 run_client:
 	java client.src.Client -ORBInitRef NameService=corbaloc::localhost:2809/NameService
 
-# -fclient -fserver -fall : pour générer les parties de l'IDL
+run_test:
+	java -cp junit-4.10.jar:. client.src.TestRunner -ORBInitRef NameService=corbaloc::localhost:2809/NameService
+
+clean:
+	rm client/src/*.class
+	rm server/src/*.class
+
+mrproper: clean
+	rm -rf BankIDL

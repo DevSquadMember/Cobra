@@ -89,10 +89,10 @@ public class Bank extends IBankPOA {
         void execute() {
             switch (this.operation) {
                 case WITHDRAW:
-                    account.withdraw(amount);
+                    this.account.withdraw(amount);
                     break;
                 case DEPOSIT:
-                    account.deposit(amount);
+                    this.account.deposit(amount);
                     break;
             }
         }
@@ -127,7 +127,8 @@ public class Bank extends IBankPOA {
     public OperationResult withdraw(int clientId, int accountId, double amount) {
         BankOperation operation = new BankOperation(clientId, accountId, amount, Operation.WITHDRAW);
         OperationResult result = operation.check();
-        operation.execute();
+        if (result == OperationResult.SUCCESS)
+            operation.execute();
         return result;
     }
 
@@ -135,7 +136,8 @@ public class Bank extends IBankPOA {
     public OperationResult deposit(int clientId, int accountId, double amount) {
         BankOperation operation = new BankOperation(clientId, accountId, amount, Operation.DEPOSIT);
         OperationResult result = operation.check();
-        operation.execute();
+        if (result == OperationResult.SUCCESS)
+            operation.execute();
         return result;
     }
 
