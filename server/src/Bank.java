@@ -1,18 +1,17 @@
 package server.src;
 
-import BankIDL.IBankPOA;
-import BankIDL.OperationResult;
+import BankIDL.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Bank extends IBankPOA {
 
+    private IInterBank interBank;
+
     private static int ACCOUNT_TOKEN = 0;
     private static int CLIENT_TOKEN = 0;
     private static int BANK_TOKEN = 0;
-
-    private enum Operation { WITHDRAW, DEPOSIT };
 
     private int id;
 
@@ -28,7 +27,8 @@ public class Bank extends IBankPOA {
      */
     private HashMap<Integer, Account> accounts;
 
-    public Bank() {
+    public Bank(IInterBank interBank) {
+        this.interBank = interBank;
         this.id = BANK_TOKEN++;
         this.clientAccounts = new HashMap<Integer, ArrayList<Integer>>();
         this.accounts = new HashMap<Integer, Account>();
@@ -44,58 +44,78 @@ public class Bank extends IBankPOA {
 
 
     private class BankOperation {
-        int clientId;
-        int accountId;
-        double amount;
+        BankTransaction transaction;
         Account account;
-        Operation operation;
+        int clientId;
         boolean clientCheck;
 
-        BankOperation(int clientId, int accountId, double amount, Operation operation) {
-            this(clientId, accountId, amount, operation, true);
+        BankOperation(int clientId, int accountId, double amount, TransactionType type) {
+            this(clientId, accountId, amount, type, true);
         }
 
-        BankOperation(int clientId, int accountId, double amount, Operation operation, boolean clientCheck) {
+        BankOperation(int clientId, int accountId, double amount, TransactionType type, boolean clientCheck) {
             this.clientId = clientId;
-            this.accountId = accountId;
-            this.amount = amount;
-            this.operation = operation;
+            this.transaction = new BankTransaction();
+            this.transaction.accountIdSrc = accountId;
+            this.transaction.amount = amount;
+            this.transaction.type = type;
             this.clientCheck = clientCheck;
         }
 
-        OperationResult check() {
-            if (amount <= 0) {
-                return OperationResult.ERROR_AMOUNT_INVALID;
+        BankOperation(BankTransaction transaction) {
+            this.clientId = -1;
+            this.transaction = transaction;
+        }
+
+        TransactionResult check() {
+            int accountId;
+            TransactionResult accountInexistant;
+            if (bankId() == this.transaction.bankIdSrc) {
+                accountId = this.transaction.accountIdSrc;
+                accountInexistant = TransactionResult.ERROR_ACCOUNT_INEXISTANT;
+            } else {
+                accountId = this.transaction.accountIdDest;
+                accountInexistant = TransactionResult.ERROR_ACCOUNT_DEST_INEXISTANT;
             }
 
-            // Le client existe
-            if (!clientCheck || isClient(clientId)) {
+            if (this.transaction.amount <= 0) {
+                this.transaction.result = TransactionResult.ERROR_AMOUNT_INVALID;
+            } else if (!this.clientCheck || isClient(this.clientId)) { // Le client existe
                 // Le compte existe
                 if (accounts.containsKey(accountId)) {
                     Account account = accounts.get(accountId);
                     // Le compte appartient au client
-                    if (!clientCheck || account.hasAccess(clientId)) {
+                    if (!clientCheck || account.hasAccess(this.clientId)) {
                         this.account = account;
-                        return OperationResult.SUCCESS;
+                        this.transaction.result = TransactionResult.SUCCESS;
                     }
                     else
-                        return OperationResult.ERROR_ACCESS_DENIED;
+                        this.transaction.result = TransactionResult.ERROR_ACCESS_DENIED;
                 } else
-                    return OperationResult.ERROR_ACCOUNT_INEXISTANT;
+                    this.transaction.result = accountInexistant;
             } else
-                return OperationResult.ERROR_CLIENT_INEXISTANT;
+                this.transaction.result = TransactionResult.ERROR_CLIENT_INEXISTANT;
+            return this.transaction.result;
         }
 
         void execute() {
-            switch (this.operation) {
-                case WITHDRAW:
-                    this.account.withdraw(amount);
-                    break;
-                case DEPOSIT:
-                    this.account.deposit(amount);
-                    break;
+            if (this.transaction.type == TransactionType.DEPOSIT) {
+                this.account.deposit(this.transaction.amount);
+            } else if (this.transaction.type == TransactionType.WITHDRAW) {
+                this.account.withdraw(this.transaction.amount);
+            } else if (this.transaction.type == TransactionType.TRANSFER) {
+                if (this.transaction.bankIdSrc == bankId()) {
+                    this.account.withdraw(this.transaction.amount);
+                } else if (this.transaction.bankIdDest == bankId()) {
+                    this.account.deposit(this.transaction.amount);
+                }
             }
         }
+    }
+
+    @Override
+    public int bankId() {
+        return this.id;
     }
 
     @Override
@@ -124,19 +144,19 @@ public class Bank extends IBankPOA {
     }
 
     @Override
-    public OperationResult withdraw(int clientId, int accountId, double amount) {
-        BankOperation operation = new BankOperation(clientId, accountId, amount, Operation.WITHDRAW);
-        OperationResult result = operation.check();
-        if (result == OperationResult.SUCCESS)
+    public TransactionResult withdraw(int clientId, int accountId, double amount) {
+        BankOperation operation = new BankOperation(clientId, accountId, amount, TransactionType.WITHDRAW);
+        TransactionResult result = operation.check();
+        if (result == TransactionResult.SUCCESS)
             operation.execute();
         return result;
     }
 
     @Override
-    public OperationResult deposit(int clientId, int accountId, double amount) {
-        BankOperation operation = new BankOperation(clientId, accountId, amount, Operation.DEPOSIT);
-        OperationResult result = operation.check();
-        if (result == OperationResult.SUCCESS)
+    public TransactionResult deposit(int clientId, int accountId, double amount) {
+        BankOperation operation = new BankOperation(clientId, accountId, amount, TransactionType.DEPOSIT);
+        TransactionResult result = operation.check();
+        if (result == TransactionResult.SUCCESS)
             operation.execute();
         return result;
     }
@@ -170,21 +190,49 @@ public class Bank extends IBankPOA {
     }
 
     @Override
-    public OperationResult transfer(int clientId, int accountIdSrc, int accountIdDest, double amount) {
-        BankOperation opWithdraw = new BankOperation(clientId, accountIdSrc, amount, Operation.WITHDRAW);
+    public void transfer(int clientId, int accountIdSrc, int bankIdDest, int accountIdDest, double amount) {
+        BankOperation operation = new BankOperation(clientId, accountIdSrc, amount, TransactionType.WITHDRAW);
+        if (operation.check() == TransactionResult.SUCCESS) {
+            BankTransaction transaction = new BankTransaction();
+            transaction.bankIdSrc = bankId();
+            transaction.bankIdDest = bankIdDest;
+            transaction.accountIdSrc = accountIdSrc;
+            transaction.accountIdDest = accountIdDest;
+            transaction.amount = amount;
+            transaction.type = TransactionType.TRANSFER;
+            this.interBank.registerTransaction(transaction);
+        }
+        /*BankOperation opWithdraw = new BankOperation(clientId, accountIdSrc, amount, Operation.WITHDRAW);
         BankOperation opDeposit = new BankOperation(clientId, accountIdDest, amount, Operation.DEPOSIT, false);
-        OperationResult result = opWithdraw.check();
+        TransactionResult result = opWithdraw.check();
         // Si le retrait est possible
-        if (result == OperationResult.SUCCESS) {
+        if (result == TransactionResult.SUCCESS) {
             result = opDeposit.check();
             // Et que le dépôt également
-            if (result == OperationResult.SUCCESS) {
+            if (result == TransactionResult.SUCCESS) {
                 opWithdraw.execute();
                 opDeposit.execute();
-            } else if (result == OperationResult.ERROR_ACCOUNT_INEXISTANT) {
-                result = OperationResult.ERROR_ACCOUNT_DEST_INEXISTANT;
+            } else if (result == TransactionResult.ERROR_ACCOUNT_INEXISTANT) {
+                result = TransactionResult.ERROR_ACCOUNT_DEST_INEXISTANT;
             }
         }
-        return result;
+        return result;*/
+    }
+
+    @Override
+    public void prepareTransaction(BankTransaction transaction) {
+        BankOperation operation = new BankOperation(transaction);
+        operation.check();
+        this.interBank.registeredTransaction(transaction);
+    }
+
+    @Override
+    public void executeTransaction(BankTransaction transaction) {
+        BankOperation operation = new BankOperation(transaction);
+        TransactionResult result = operation.check();
+        if (result == TransactionResult.SUCCESS) {
+            operation.execute();
+        }
+        this.interBank.registeredTransaction(transaction);
     }
 }

@@ -11,6 +11,9 @@ compile_code:
 run_nameserver:
 	tnameserv -ORBInitialPort 2809
 
+run_bank:
+	java server.src.BankServer -ORBInitRef NameService=corbaloc::localhost:2809/NameService
+
 run_server:
 	java server.src.Server -ORBInitRef NameService=corbaloc::localhost:2809/NameService
 

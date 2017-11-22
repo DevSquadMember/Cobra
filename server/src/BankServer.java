@@ -1,5 +1,7 @@
 package server.src;
 
+import BankIDL.IBank;
+import BankIDL.IBankHelper;
 import BankIDL.IInterBank;
 import BankIDL.IInterBankHelper;
 import org.omg.CORBA.ORB;
@@ -9,7 +11,8 @@ import org.omg.CosNaming.NamingContextExtHelper;
 import org.omg.PortableServer.POA;
 import org.omg.PortableServer.POAHelper;
 
-public class Server {
+public class BankServer {
+
     public static void main(String args[]) throws Exception {
         // Initialisation d'ORB
         ORB orb = ORB.init(args, null);
@@ -22,15 +25,20 @@ public class Server {
         NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
 
 
-        /** CODE APPLICATIF DU SERVER **/
-        InterBank interBank = new InterBank();
+        /// Récupération de l'interbank
+        objRef = ncRef.resolve_str("interbank.interbank");
+        IInterBank interBank = IInterBankHelper.narrow(objRef);
 
-        objRef = rootpoa.servant_to_reference(interBank);
+        Bank bank = new Bank(interBank);
 
-        IInterBank bankRef = IInterBankHelper.narrow(objRef);
+        objRef = rootpoa.servant_to_reference(bank);
 
-        NameComponent path[ ] = ncRef.to_name("interbank.interbank");
+        IBank bankRef = IBankHelper.narrow(objRef);
+
+        NameComponent path[ ] = ncRef.to_name("test.bank");
         ncRef.rebind(path, bankRef);
+
+        interBank.register(bankRef);
 
         orb.run();
     }

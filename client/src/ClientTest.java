@@ -118,7 +118,9 @@ public class ClientTest {
 
         assertEquals(bank.getAccountBalance(client1, account1), 0., 0.);
         assertEquals(bank.getAccountBalance(client1, account2), 0., 0.);
-        assertEquals(bank.transfer(client1, account1, account2, 60.), OperationResult.SUCCESS);
+        bank.transfer(client1, account1, bank.bankId(), account2, 60.);
+
+        /// TODO : wait ?
         assertEquals(bank.getAccountBalance(client1, account1), -60., 0.);
         assertEquals(bank.getAccountBalance(client1, account2), 60., 0.);
         System.out.println(" - OK");
@@ -134,7 +136,9 @@ public class ClientTest {
 
         assertEquals(bank.getAccountBalance(client1, account1), 0., 0.);
         assertEquals(bank.getAccountBalance(client2, account2), 0., 0.);
-        assertEquals(bank.transfer(client1, account1, account2, 70.), OperationResult.SUCCESS);
+        bank.transfer(client1, account1, bank.bankId(), account2, 70.);
+
+        /// TODO : wait ?
         assertEquals(bank.getAccountBalance(client1, account1), -70., 0.);
         assertEquals(bank.getAccountBalance(client2, account2), 70., 0.);
         System.out.println(" - OK");

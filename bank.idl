@@ -1,27 +1,59 @@
-module BankIDL
-{
+module BankIDL {
 
-  typedef sequence<long> AccountList;
+    typedef sequence<long> AccountList;
 
-  enum OperationResult
-  {
-    SUCCESS,
-    ERROR_CLIENT_INEXISTANT,
-    ERROR_ACCOUNT_INEXISTANT,
-    ERROR_AMOUNT_INVALID,
-    ERROR_ACCESS_DENIED,
-    ERROR_ACCOUNT_DEST_INEXISTANT
-  };
+    enum TransactionResult {
+        SUCCESS,
+        ERROR_CLIENT_INEXISTANT,
+        ERROR_ACCOUNT_INEXISTANT,
+        ERROR_AMOUNT_INVALID,
+        ERROR_ACCESS_DENIED,
+        ERROR_ACCOUNT_DEST_INEXISTANT
+    };
 
-  interface IBank
-  {
-    long createClient();
-    long openAccount(in long clientId);
-    OperationResult withdraw(in long clientId,in long accountId, in double amount);
-    OperationResult deposit(in long clientId,in long accountId, in double amount);
-    double getAccountBalance(in long clientId, in long accountId);
-    AccountList getAccountIds(in long clientId);
-    OperationResult transfer(in long clientId, in long accountIdSrc, in long accountIdDest, in double amount);
-  };
+    enum TransactionType {
+        WITHDRAW,
+        DEPOSIT,
+        TRANSFER
+    };
+
+    struct BankTransaction {
+        long bankIdSrc;
+        long bankIdDest;
+        long accountIdSrc;
+        long accountIdDest;
+        double amount;
+        TransactionType type;
+        TransactionResult result;
+    };
+
+    interface IBank {
+        readonly attribute long bankId;
+        long createClient();
+        long openAccount(in long clientId);
+        TransactionResult withdraw(in long clientId,in long accountId, in double amount);
+        TransactionResult deposit(in long clientId,in long accountId, in double amount);
+        double getAccountBalance(in long clientId, in long accountId);
+        AccountList getAccountIds(in long clientId);
+        void transfer(in long clientId, in long accountIdSrc, in long bankIdDest, in long accountIdDest, in double amount);
+
+        // Préparation de la transaction sans l'exécuter
+        oneway void prepareTransaction(in BankTransaction transaction);
+        // Exécution de la transaction
+        oneway void executeTransaction(in BankTransaction transaction);
+    };
+
+    interface IInterBank {
+        typedef sequence <IBank> IBanks;
+        readonly attribute IBanks banks;
+
+        // Enregistrer une banque dans l'interbank
+        oneway void register(in IBank bank);
+
+        // enregistrer une transaction à effectuer par la Banque destinataire
+        void registerTransaction(in BankTransaction transaction);
+        // résultat de la transaction effectuée par la Banque
+        void registeredTransaction(in BankTransaction transaction);
+    };
 };
-    
+

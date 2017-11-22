@@ -14,11 +14,10 @@ public class Client {
     public IBank bank;
 
     public Client(String args[]) throws InvalidName, CannotProceed, org.omg.CosNaming.NamingContextPackage.InvalidName, NotFound {
-        org.omg.CORBA.Object objRef;
-
+        // Initialisation d'ORB
         ORB orb = ORB.init(args, null);
 
-        objRef = orb.resolve_initial_references("NameService");
+        org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
         NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
 
         objRef = ncRef.resolve_str("bank.bank");
