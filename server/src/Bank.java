@@ -262,4 +262,64 @@ public class Bank extends IBankPOA {
             this.waitingTransactions.remove(transaction.id);
         }
     }
+
+
+    @GET
+    @Path("/getClientId")
+    @Produces("text/plain")
+    public int getClientIdRest()
+    {
+	return this.createClient();
+    }
+
+    @GET
+    @Path("/getNewAccount/{clientId}")
+    @Produces("text/plain")
+    public int getNewAccountRest(@PathParam("clientId") int clientId)
+    {
+	return this.openAccount(clientId);
+    }
+
+    @POST
+    @Path("/deposit")
+    @Consumes(MediaType.TEXT_XML)
+    @Produces("text/plain")
+    public TransactionResult depositRest(TransactionObject t)
+    {
+	return this.deposit(t.clientId,t.accountId,t.amount);
+    }
+
+    @POST
+    @Path("/withdraw")
+    @Consumes(MediaType.TEXT_XML)
+    @Produces("text/plain")
+    public TransactionResult withdrawRest(TransactionObject t)
+    {
+	return this.withdraw(t.clientId,t.accountId,t.amount);
+    }
+
+    @GET
+    @Path("/getAccountId/{clientId}")
+    @Produces("text/plain")
+    public int[] getAccountIdsRest(@PathParam("clientId") int clientId)
+    {
+	return this.getAccountsIds(clientId);
+    }
+
+    @GET
+    @Path("/getBalance/{clientId}/{accountId}")
+    @Produces("text/plain")
+    public int getBalanceRest(@PathParam("clientId") int clientId,@PathParam("accountId") int accountId)
+    {
+	return getAccountBalance(clientId,accountId);
+    }
+
+    @POST
+    @Path("/transfer")
+    @Consumes(MediaType.TEXT_XML)
+    @Produces("text/plain")
+    public TransactionResult transferRest(TransferObject t)
+    {
+	return transfer(t.clientId,t.accountSrcId,t.bankIdDest,t.accountIdDest,t.amount);
+    }
 }
