@@ -29,13 +29,15 @@ public class BankServer {
         objRef = ncRef.resolve_str("interbank.interbank");
         IInterBank interBank = IInterBankHelper.narrow(objRef);
 
-        Bank bank = new Bank(interBank);
+        Bank bank = new Bank(interBank, Integer.parseInt(args[args.length - 1]));
 
         objRef = rootpoa.servant_to_reference(bank);
 
         IBank bankRef = IBankHelper.narrow(objRef);
 
-        NameComponent path[ ] = ncRef.to_name("test.bank");
+        String sn = bank.bankId() != -1 ? bank.bankId() + ".bank" : "test.bank";
+        System.out.println("Connected as : " + sn);
+        NameComponent path[ ] = ncRef.to_name(sn);
         ncRef.rebind(path, bankRef);
 
         interBank.register(bankRef);

@@ -5,6 +5,9 @@ import BankIDL.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import static utils.Utils.ResultToString;
+import static utils.Utils.StateToString;
+
 public class Bank extends IBankPOA {
 
     private IInterBank interBank;
@@ -27,11 +30,19 @@ public class Bank extends IBankPOA {
      */
     private HashMap<Integer, Account> accounts;
 
-    public Bank(IInterBank interBank) {
+    private HashMap<Integer, BankTransaction> waitingTransactions;
+
+    Bank(IInterBank interBank) {
+        this(interBank, BANK_TOKEN++);
+    }
+
+    Bank(IInterBank interBank, int id) {
         this.interBank = interBank;
-        this.id = BANK_TOKEN++;
+        System.out.println("ID is " + id);
+        this.id = id;
         this.clientAccounts = new HashMap<Integer, ArrayList<Integer>>();
         this.accounts = new HashMap<Integer, Account>();
+        this.waitingTransactions = new HashMap<Integer, BankTransaction>();
     }
 
     private boolean isClient(int clientId) {
@@ -47,19 +58,13 @@ public class Bank extends IBankPOA {
         BankTransaction transaction;
         Account account;
         int clientId;
-        boolean clientCheck;
 
         BankOperation(int clientId, int accountId, double amount, TransactionType type) {
-            this(clientId, accountId, amount, type, true);
-        }
-
-        BankOperation(int clientId, int accountId, double amount, TransactionType type, boolean clientCheck) {
             this.clientId = clientId;
             this.transaction = new BankTransaction();
             this.transaction.accountIdSrc = accountId;
             this.transaction.amount = amount;
             this.transaction.type = type;
-            this.clientCheck = clientCheck;
         }
 
         BankOperation(BankTransaction transaction) {
@@ -68,6 +73,10 @@ public class Bank extends IBankPOA {
         }
 
         TransactionResult check() {
+            return check(false);
+        }
+
+        TransactionResult check(Boolean clientCheck) {
             int accountId;
             TransactionResult accountInexistant;
             if (bankId() == this.transaction.bankIdSrc) {
@@ -80,7 +89,7 @@ public class Bank extends IBankPOA {
 
             if (this.transaction.amount <= 0) {
                 this.transaction.result = TransactionResult.ERROR_AMOUNT_INVALID;
-            } else if (!this.clientCheck || isClient(this.clientId)) { // Le client existe
+            } else if (!clientCheck || isClient(this.clientId)) { // Le client existe
                 // Le compte existe
                 if (accounts.containsKey(accountId)) {
                     Account account = accounts.get(accountId);
@@ -191,16 +200,22 @@ public class Bank extends IBankPOA {
 
     @Override
     public void transfer(int clientId, int accountIdSrc, int bankIdDest, int accountIdDest, double amount) {
+        System.out.println("Preparing transfer");
         BankOperation operation = new BankOperation(clientId, accountIdSrc, amount, TransactionType.WITHDRAW);
-        if (operation.check() == TransactionResult.SUCCESS) {
+        if (operation.check(true) == TransactionResult.SUCCESS) {
             BankTransaction transaction = new BankTransaction();
+            transaction.id = -1;
             transaction.bankIdSrc = bankId();
             transaction.bankIdDest = bankIdDest;
             transaction.accountIdSrc = accountIdSrc;
             transaction.accountIdDest = accountIdDest;
             transaction.amount = amount;
             transaction.type = TransactionType.TRANSFER;
-            this.interBank.registerTransaction(transaction);
+            transaction.result = TransactionResult.SUCCESS;
+            transaction.state = TransactionState.WAITING;
+            transaction.executionDate = "";
+            transaction.id = this.interBank.registerTransaction(transaction);
+            this.waitingTransactions.put(transaction.id, transaction);
         }
         /*BankOperation opWithdraw = new BankOperation(clientId, accountIdSrc, amount, Operation.WITHDRAW);
         BankOperation opDeposit = new BankOperation(clientId, accountIdDest, amount, Operation.DEPOSIT, false);
@@ -222,17 +237,29 @@ public class Bank extends IBankPOA {
     @Override
     public void prepareTransaction(BankTransaction transaction) {
         BankOperation operation = new BankOperation(transaction);
-        operation.check();
-        this.interBank.registeredTransaction(transaction);
+        TransactionResult result = operation.check();
+        this.interBank.registeredTransaction(transaction.id, result);
     }
 
     @Override
     public void executeTransaction(BankTransaction transaction) {
+        if (transaction.state == TransactionState.CANCELED) {
+            System.out.println("Transaction " + transaction.id + " annulée : " + ResultToString(transaction.result));
+            this.waitingTransactions.remove(transaction.id);
+        }
+
+        System.out.println("Exécution de la transaction : " + transaction.id + " - " + StateToString(transaction.state));
         BankOperation operation = new BankOperation(transaction);
         TransactionResult result = operation.check();
+        System.out.println("Résultat de la transaction : " + ResultToString(transaction.result));
         if (result == TransactionResult.SUCCESS) {
             operation.execute();
         }
-        this.interBank.registeredTransaction(transaction);
+        this.interBank.registeredTransaction(transaction.id, result);
+
+        if (transaction.state == TransactionState.CONFIRMED) {
+            System.out.println("Transaction " + transaction.id + " effectuée");
+            this.waitingTransactions.remove(transaction.id);
+        }
     }
 }
