@@ -1,25 +1,24 @@
+package server.src;
+
 import javax.xml.bind.annotation.*;
 
 @XmlRootElement(name="transfertransaction")
-public class TransferObject
-{
-    public TransferObject()
-    {
-	clientId = -1;
-	accountId = -1;
-	amount = 0;
+public class TransferObject {
+    public TransferObject() {
+        this(-1, -1, 0);
     }
 
-    public TransfereObject(int a,int b, double c)
-    {
-	clientId = a;
-	accountId = b;
-	amount = c;
+    public TransferObject(int a,int b, double c) {
+        this.clientId = a;
+        this.accountId = b;
+        this.amount = c;
     }
     @XmlElement(name="clientId")
     int clientId;
+
     @XmlElement(name="accountId")
     int accountId;
+
     @XmlElement(name="amount")
     double amount;
 }

@@ -5,6 +5,15 @@ ifeq (run_bank,$(firstword $(MAKECMDGOALS)))
   $(eval $(RUN_ARGS):;@:)
 endif
 
+RESTLET        := .
+HTTPCOMPONENTS := .
+
+HTTPCOMPONENTS_CP := $(HTTPCOMPONENTS)/lib/httpclient-4.3.6.jar:$(HTTPCOMPONENTS)/lib/httpcore-4.3.3.jar:$(HTTPCOMPONENTS)/lib/commons-logging-1.1.3.jar
+
+RESTLET_CP := $(RESTLET)/lib/org.restlet.jar:$(RESTLET)/lib/org.restlet.ext.jaxrs.jar:$(RESTLET)/lib/javax.ws.rs_1.1/javax.ws.rs.jar
+
+CLASSPATH = .:$(RESTLET_CP):$(HTTPCOMPONENTS_CP):./lib/junit-4.10.jar
+
 compile:
 	idlj -fall bank.idl
 	#idlj -fall -pkgPrefix IBank server.src bank.idl
@@ -12,8 +21,8 @@ compile:
 
 compile_code:
 	javac BankIDL/*.java
-	javac -cp junit-4.10.jar:. client/src/*.java
-	javac -cp junit-4.10.jar:. server/src/*.java
+	javac -cp $(CLASSPATH) client/src/*.java
+	javac -cp $(CLASSPATH) server/src/*.java
 
 run_nameserver:
 	tnameserv -ORBInitialPort 2809
@@ -28,7 +37,7 @@ run_client:
 	java client.src.Client -ORBInitRef NameService=corbaloc::localhost:2809/NameService
 
 test:
-	java -cp junit-4.10.jar:. client.src.TestRunner -ORBInitRef NameService=corbaloc::localhost:2809/NameService
+	java -cp $(CLASSPATH) client.src.TestRunner -ORBInitRef NameService=corbaloc::localhost:2809/NameService
 
 clean:
 	rm client/src/*.class

@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
+
 import static utils.Utils.ResultToString;
 import static utils.Utils.StateToString;
 
@@ -206,7 +209,7 @@ public class Bank extends IBankPOA {
     @Override
     public void transfer(int clientId, int accountIdSrc, int bankIdDest, int accountIdDest, double amount) {
         System.out.println("Préparation du transfert du client " + clientId + " compte " + accountIdSrc + " vers le compte " +
-        accountIdDest + " de la banque " + bankIdDest + " montant : " + amount);
+                accountIdDest + " de la banque " + bankIdDest + " montant : " + amount);
         BankOperation operation = new BankOperation(clientId, accountIdSrc, amount, TransactionType.WITHDRAW);
         TransactionResult result = operation.check(true);
         if (result == TransactionResult.SUCCESS) {
@@ -275,63 +278,57 @@ public class Bank extends IBankPOA {
         }
     }
 
+    /** PARTIE REST **/
 
     @GET
     @Path("/getClientId")
     @Produces("text/plain")
-    public int getClientIdRest()
-    {
-	return this.createClient();
+    public int getClientIdRest() {
+        return this.createClient();
     }
 
     @GET
     @Path("/getNewAccount/{clientId}")
     @Produces("text/plain")
-    public int getNewAccountRest(@PathParam("clientId") int clientId)
-    {
-	return this.openAccount(clientId);
+    public int getNewAccountRest(@PathParam("clientId") int clientId) {
+        return this.openAccount(clientId);
     }
 
     @POST
     @Path("/deposit")
     @Consumes(MediaType.TEXT_XML)
     @Produces("text/plain")
-    public TransactionResult depositRest(TransactionObject t)
-    {
-	return this.deposit(t.clientId,t.accountId,t.amount);
+    public TransactionResult depositRest(TransferObject t) {
+        return this.deposit(t.clientId, t.accountId, t.amount);
     }
 
     @POST
     @Path("/withdraw")
     @Consumes(MediaType.TEXT_XML)
     @Produces("text/plain")
-    public TransactionResult withdrawRest(TransactionObject t)
-    {
-	return this.withdraw(t.clientId,t.accountId,t.amount);
+    public TransactionResult withdrawRest(TransferObject t) {
+        return this.withdraw(t.clientId, t.accountId, t.amount);
     }
 
     @GET
     @Path("/getAccountId/{clientId}")
     @Produces("text/plain")
-    public int[] getAccountIdsRest(@PathParam("clientId") int clientId)
-    {
-	return this.getAccountsIds(clientId);
+    public int[] getAccountIdsRest(@PathParam("clientId") int clientId) {
+        return this.getAccountIds(clientId);
     }
 
     @GET
     @Path("/getBalance/{clientId}/{accountId}")
     @Produces("text/plain")
-    public int getBalanceRest(@PathParam("clientId") int clientId,@PathParam("accountId") int accountId)
-    {
-	return getAccountBalance(clientId,accountId);
+    public double getBalanceRest(@PathParam("clientId") int clientId,@PathParam("accountId") int accountId) {
+        return getAccountBalance(clientId, accountId);
     }
 
     @POST
     @Path("/transfer")
     @Consumes(MediaType.TEXT_XML)
     @Produces("text/plain")
-    public TransactionResult transferRest(TransferObject t)
-    {
-	return transfer(t.clientId,t.accountSrcId,t.bankIdDest,t.accountIdDest,t.amount);
+    public void transferRest(TransactionObject t) {
+        transfer(t.clientId, t.accountIdSrc, t.bankIdDest, t.accountIdDest, t.amount);
     }
 }
