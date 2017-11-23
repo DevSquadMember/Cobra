@@ -4,6 +4,7 @@ import BankIDL.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Scanner;
 
 import static utils.Utils.ResultToString;
 import static utils.Utils.StateToString;
@@ -38,7 +39,7 @@ public class Bank extends IBankPOA {
 
     Bank(IInterBank interBank, int id) {
         this.interBank = interBank;
-        System.out.println("ID is " + id);
+        System.out.println("Connectée en tant que banque " + id);
         this.id = id;
         this.clientAccounts = new HashMap<Integer, ArrayList<Integer>>();
         this.accounts = new HashMap<Integer, Account>();
@@ -65,6 +66,7 @@ public class Bank extends IBankPOA {
             this.transaction.accountIdSrc = accountId;
             this.transaction.amount = amount;
             this.transaction.type = type;
+            this.transaction.bankIdSrc = bankId();
         }
 
         BankOperation(BankTransaction transaction) {
@@ -91,8 +93,10 @@ public class Bank extends IBankPOA {
                 this.transaction.result = TransactionResult.ERROR_AMOUNT_INVALID;
             } else if (!clientCheck || isClient(this.clientId)) { // Le client existe
                 // Le compte existe
+                System.out.println("L'id du compte à vérifier est : " + accountId);
                 if (accounts.containsKey(accountId)) {
                     Account account = accounts.get(accountId);
+                    System.out.println("account id is : " + account.getId());
                     // Le compte appartient au client
                     if (!clientCheck || account.hasAccess(this.clientId)) {
                         this.account = account;
@@ -141,6 +145,7 @@ public class Bank extends IBankPOA {
             int accountId = ACCOUNT_TOKEN;
             ACCOUNT_TOKEN++;
 
+            System.out.println("Ouverture d'un compte " + accountId + " pour le client " + clientId);
             // On créé le compte
             this.accounts.put(accountId, new Account(accountId, clientId));
             // On ajoute l'id du compte à la liste des comptes du client
@@ -200,9 +205,11 @@ public class Bank extends IBankPOA {
 
     @Override
     public void transfer(int clientId, int accountIdSrc, int bankIdDest, int accountIdDest, double amount) {
-        System.out.println("Preparing transfer");
+        System.out.println("Préparation du transfert du client " + clientId + " compte " + accountIdSrc + " vers le compte " +
+        accountIdDest + " de la banque " + bankIdDest + " montant : " + amount);
         BankOperation operation = new BankOperation(clientId, accountIdSrc, amount, TransactionType.WITHDRAW);
-        if (operation.check(true) == TransactionResult.SUCCESS) {
+        TransactionResult result = operation.check(true);
+        if (result == TransactionResult.SUCCESS) {
             BankTransaction transaction = new BankTransaction();
             transaction.id = -1;
             transaction.bankIdSrc = bankId();
@@ -216,6 +223,8 @@ public class Bank extends IBankPOA {
             transaction.executionDate = "";
             transaction.id = this.interBank.registerTransaction(transaction);
             this.waitingTransactions.put(transaction.id, transaction);
+        } else {
+            System.out.println("Impossible d'effectuer la transaction - " + ResultToString(result));
         }
         /*BankOperation opWithdraw = new BankOperation(clientId, accountIdSrc, amount, Operation.WITHDRAW);
         BankOperation opDeposit = new BankOperation(clientId, accountIdDest, amount, Operation.DEPOSIT, false);
@@ -243,19 +252,22 @@ public class Bank extends IBankPOA {
 
     @Override
     public void executeTransaction(BankTransaction transaction) {
+        System.out.println("La transaction " + transaction.id + " va être exécutée, appuyez sur Entrée pour continuer...");
+        new Scanner(System.in).nextLine();
+
         if (transaction.state == TransactionState.CANCELED) {
             System.out.println("Transaction " + transaction.id + " annulée : " + ResultToString(transaction.result));
             this.waitingTransactions.remove(transaction.id);
+        } else {
+            System.out.println("Exécution de la transaction : " + transaction.id + " - " + StateToString(transaction.state));
+            BankOperation operation = new BankOperation(transaction);
+            TransactionResult result = operation.check();
+            System.out.println("Résultat de la transaction : " + ResultToString(transaction.result));
+            if (result == TransactionResult.SUCCESS) {
+                operation.execute();
+            }
         }
-
-        System.out.println("Exécution de la transaction : " + transaction.id + " - " + StateToString(transaction.state));
-        BankOperation operation = new BankOperation(transaction);
-        TransactionResult result = operation.check();
-        System.out.println("Résultat de la transaction : " + ResultToString(transaction.result));
-        if (result == TransactionResult.SUCCESS) {
-            operation.execute();
-        }
-        this.interBank.registeredTransaction(transaction.id, result);
+        this.interBank.registeredTransaction(transaction.id, transaction.result);
 
         if (transaction.state == TransactionState.CONFIRMED) {
             System.out.println("Transaction " + transaction.id + " effectuée");

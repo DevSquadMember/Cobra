@@ -9,10 +9,18 @@ import org.omg.CosNaming.NamingContextExtHelper;
 import org.omg.CosNaming.NamingContextPackage.CannotProceed;
 import org.omg.CosNaming.NamingContextPackage.NotFound;
 
+import java.util.Scanner;
+
 public class Client {
 
     private static ORB orb = null;
     public IBank bank;
+
+    enum MENU {
+        DISPLAY_BALANCE,
+        QUIT,
+        UNDEFINED
+    }
 
     public Client() {
 
@@ -44,6 +52,20 @@ public class Client {
         return IBankHelper.narrow(objRef);
     }
 
+    public static MENU displayMenu() {
+        System.out.println("-- Menu du client --");
+        System.out.println("1 - Afficher le solde des comptes");
+        System.out.println("2 - Quitter");
+        System.out.println("Entrez votre sélection");
+        String choice = new Scanner(System.in).nextLine();
+        if (choice.equals("1")) {
+            return MENU.DISPLAY_BALANCE;
+        } else if (choice.equals("2")) {
+            return MENU.QUIT;
+        }
+        return MENU.UNDEFINED;
+    }
+
     public static void main(String args[]) throws Exception {
         IBank bank1 = connectToBank(args, "1");
         IBank bank2 = connectToBank(args, "2");
@@ -55,6 +77,18 @@ public class Client {
         int account2 = bank2.openAccount(client2);
 
         bank1.transfer(client1, account1, bank2.bankId(), account2, 49);
+
+        MENU choice = MENU.UNDEFINED;
+        while (choice != MENU.QUIT) {
+            choice = displayMenu();
+            if (choice == MENU.DISPLAY_BALANCE) {
+                System.out.println("Le solde du compte du client " + client1 + "(" + account1 + ") est de : " +
+                        bank1.getAccountBalance(client1, account1));
+                System.out.println("Le solde du compte du client " + client2 + "(" + account2 + ") est de : " +
+                        bank2.getAccountBalance(client2, account2));
+            }
+        }
+        System.out.println("Fermeture du client");
     }
 }
 	

@@ -18,7 +18,7 @@ public class InterBank extends IInterBankPOA {
     private DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
     // Liste des banques connectées à l'InterBank
-    private ArrayList<IBank> banks = new ArrayList<IBank>();
+    private HashMap<Integer, IBank> banks = new HashMap<Integer, IBank>();
 
     // Historique des transactions effectuées
     private ArrayList<BankTransaction> transactions = new ArrayList<BankTransaction>();
@@ -30,29 +30,11 @@ public class InterBank extends IInterBankPOA {
         return dateFormat.format(new Date());
     }
 
-    private IBank getBank(int bankId) {
-        for (IBank bank : this.banks) {
-            if (bank.bankId() == bankId) {
-                return bank;
-            }
-        }
-        return null;
-    }
-
-    private Boolean isAlreadyRegistered(IBank bank) {
-        for (IBank b : this.banks) {
-            if (b.bankId() == bank.bankId()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     @Override
     public IBank[] banks() {
         IBank[] iBanks = new IBank[this.banks.size()];
         int i = 0;
-        for (IBank id : this.banks) {
+        for (IBank id : this.banks.values()) {
             iBanks[i] = id;
             i++;
         }
@@ -61,11 +43,8 @@ public class InterBank extends IInterBankPOA {
 
     @Override
     public void register(IBank bank) {
-        // Si la banque était déjà enregistrée, on supprime la référence précédente
-        IBank b = getBank(bank.bankId());
-        if (b != null)
-            this.banks.remove(b);
-        this.banks.add(bank);
+        // Si la banque était déjà enregistrée, la référence précédente est remplacée par la nouvelle
+        this.banks.put(bank.bankId(), bank);
         System.out.println("Banque enregistrée : " + bank.bankId());
 
         // Pour chaque transaction en attente
@@ -90,12 +69,12 @@ public class InterBank extends IInterBankPOA {
         transaction.state = TransactionState.WAITING;
         // On passe la transaction dans la file d'attente
         this.waitingTransactions.add(transaction);
-        IBank bank = getBank(transaction.bankIdDest);
+        IBank bank = this.banks.get(transaction.bankIdDest);
         if (bank == null) {
             // prévenir la banque d'une erreur ? Tout stocker dans Transaction avec un id ?
             return transaction.id;
         }
-        System.out.println("Bank " + bank.bankId() + " is going to execute transaction");
+        System.out.println("Redirection de la transaction vers la banque " + bank.bankId());
         bank.executeTransaction(transaction);
         return transaction.id;
     }
@@ -114,7 +93,7 @@ public class InterBank extends IInterBankPOA {
         transaction.executionDate = getDateToken();
         this.waitingTransactions.remove(transaction);
         this.transactions.add(transaction);
-        System.out.println("Transaction " + transaction.id + " effectuée");
+        System.out.println("Transaction " + transaction.id + " close");
     }
 
     @Override
@@ -130,27 +109,29 @@ public class InterBank extends IInterBankPOA {
             return;
         }
 
-        System.out.println("Registered Transaction : " + transactionId + " - " + StateToString(transaction.state));
+        System.out.println("Retour de la transaction : " + transactionId + " - " + StateToString(transaction.state));
 
         transaction.result = result;
         IBank bank = null;
 
         if (result != TransactionResult.SUCCESS) {
+            System.out.println("Transaction annulée");
             transaction.state = TransactionState.CANCELED;
-            bank = getBank(transaction.bankIdSrc);
+            bank = this.banks.get(transaction.bankIdSrc);
         }
 
         if (transaction.state == TransactionState.WAITING) { // Transaction en attente de réponse de la banque destinataire
             // Réponse de la banque destinataire reçue
             transaction.state = TransactionState.CONFIRMED;
-            bank = getBank(transaction.bankIdSrc);
+            bank = this.banks.get(transaction.bankIdSrc);
         } else if (transaction.state == TransactionState.CONFIRMED) { // Transaction en attente de confirmation de la banque source
             // Réponse de la banque source reçue
             endTransaction(transaction);
+            System.out.println("Transaction effectuée");
         }
 
         if (bank != null) {
-            System.out.println("Bank " + bank.bankId() + " is going to execute transaction");
+            System.out.println("La transaction va être exécuter par la banque " + bank.bankId());
             bank.executeTransaction(transaction);
         }
     }
