@@ -36,7 +36,6 @@ public class BankServer {
         IBank bankRef = IBankHelper.narrow(objRef);
 
         String sn = bank.bankId() != -1 ? bank.bankId() + ".bank" : "test.bank";
-        System.out.println("Connected as : " + sn);
         NameComponent path[ ] = ncRef.to_name(sn);
         ncRef.rebind(path, bankRef);
 
