@@ -1,6 +1,7 @@
 package server.src;
 
 import BankIDL.*;
+import org.omg.CORBA.ORB;
 import org.omg.PortableInterceptor.SUCCESSFUL;
 
 import java.text.DateFormat;
@@ -12,6 +13,8 @@ import java.util.HashMap;
 import static utils.Utils.StateToString;
 
 public class InterBank extends IInterBankPOA {
+
+    private ORB orb;
 
     private static int TRANSACTION_TOKEN = 0;
 
@@ -26,6 +29,10 @@ public class InterBank extends IInterBankPOA {
     // Transactions en cours d'exécution : en attente d'une réponse de la part de la banque
     private ArrayList<BankTransaction> waitingTransactions = new ArrayList<BankTransaction>();
 
+    InterBank(ORB orb) {
+        this.orb = orb;
+    }
+
     private String getDateToken() {
         return dateFormat.format(new Date());
     }
@@ -39,6 +46,11 @@ public class InterBank extends IInterBankPOA {
             i++;
         }
         return iBanks;
+    }
+
+    @Override
+    public void shutdown() {
+        this.orb.shutdown(false);
     }
 
     @Override

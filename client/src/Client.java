@@ -47,7 +47,6 @@ public class Client {
         org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
         NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
         String sn = bankId + ".bank";
-        System.out.println("Trying to connect to Bank : " + sn);
         objRef = ncRef.resolve_str(bankId + ".bank");
         return IBankHelper.narrow(objRef);
     }
@@ -82,6 +81,8 @@ public class Client {
         while (choice != MENU.QUIT) {
             choice = displayMenu();
             if (choice == MENU.DISPLAY_BALANCE) {
+                bank1 = connectToBank(args, "1");
+                bank2 = connectToBank(args, "2");
                 System.out.println("Le solde du compte du client " + client1 + "(" + account1 + ") est de : " +
                         bank1.getAccountBalance(client1, account1));
                 System.out.println("Le solde du compte du client " + client2 + "(" + account2 + ") est de : " +
