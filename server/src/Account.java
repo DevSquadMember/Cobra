@@ -26,8 +26,6 @@ public class Account implements Serializable {
     }
 
     public boolean hasAccess(int clientId) {
-        System.out.println("Client id of account is : " + this.clientId);
-        System.out.println("Checking access for client : " + this.clientId);
         return this.clientId == clientId;
     }
 

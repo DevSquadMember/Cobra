@@ -11,7 +11,7 @@ La règle : `make build` effectue :
 ### Sans persistence
 - Lancer le serveur de nom (Nameserver) : `make run_nameserver`
 - Lancer le serveur Interbank : `make run_server`
-- Lancer un serveur bancaire : `make run_bank <BANK_ID>`
+- Lancer un serveur bancaire : `make run_bank <BANK_ID>` (utiliser 1 comme BANK_ID)
 - Lancer le client : `make run_client`
 
 ### REST

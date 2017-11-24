@@ -76,7 +76,7 @@ public class Bank extends IBankPOA implements Serializable {
 
     }
 
-    HashMap<Integer, ArrayList<Integer>> getClientAccounts() {
+    public HashMap<Integer, ArrayList<Integer>> getClientAccounts() {
         return clientAccounts;
     }
 
@@ -280,7 +280,7 @@ public class Bank extends IBankPOA implements Serializable {
                     result = TransactionResult.ERROR_ACCOUNT_DEST_INEXISTANT;
                 }
             }
-        } else {
+        } else if (this.interBank != null) {
             System.out.println("Préparation du transfert du client " + clientId + " compte " + accountIdSrc + " vers le compte " +
                     accountIdDest + " de la banque " + bankIdDest + " montant : " + amount);
             BankOperation operation = new BankOperation(clientId, accountIdSrc, amount, TransactionType.WITHDRAW);
@@ -302,6 +302,8 @@ public class Bank extends IBankPOA implements Serializable {
             } else {
                 System.out.println("Impossible d'effectuer la transaction - " + ResultToString(result));
             }
+        } else {
+            System.out.println("Aucune connexion au serveur Interbank");
         }
     }
 

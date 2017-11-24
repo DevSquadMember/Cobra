@@ -14,8 +14,8 @@ public class ClientRest {
     public static void main(String[] args) throws IOException {
         // Ouverture du client de requête sur le port donné en paramètre
         int port = DEFAULT_PORT;
-        if (args.length > 1) {
-            port = Integer.parseInt(args[args.length - 1]);
+        if (args.length > 0) {
+            port = Integer.parseInt(args[0]);
         }
         RequestClient.open(port);
 

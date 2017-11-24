@@ -91,7 +91,7 @@ run_client_persistent:
 	java client.src.ClientPersistent -ORBInitRef NameService=corbaloc::localhost:1050/NameService
 
 run_client_rest:
-	java -cp $(CLASSPATH) client.src.rest.ClientRest
+	java -cp $(CLASSPATH) client.src.rest.ClientRest $(RUN_ARGS)
 
 test:
 	java -cp $(CLASSPATH) client.src.TestRunner -ORBInitRef NameService=corbaloc::localhost:1050/NameService
@@ -106,5 +106,6 @@ clean:
 	rm -f save/*.ser
 
 mrproper: clean
+	echo "Suppression du code généré par l'IDL"
 	rm -rf BankIDL
 	rm -rf save

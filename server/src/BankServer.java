@@ -8,6 +8,9 @@ import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NameComponent;
 import org.omg.CosNaming.NamingContextExt;
 import org.omg.CosNaming.NamingContextExtHelper;
+import org.omg.CosNaming.NamingContextPackage.CannotProceed;
+import org.omg.CosNaming.NamingContextPackage.InvalidName;
+import org.omg.CosNaming.NamingContextPackage.NotFound;
 import org.omg.PortableServer.POA;
 import org.omg.PortableServer.POAHelper;
 
@@ -34,13 +37,17 @@ public class BankServer {
         objRef = orb.resolve_initial_references("NameService");
         NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
 
-
         /// Récupération de l'interbank
-        objRef = ncRef.resolve_str("interbank.interbank");
-        IInterBank interBank = IInterBankHelper.narrow(objRef);
+        IInterBank interBank;
+        try {
+            objRef = ncRef.resolve_str("interbank.interbank");
+            interBank = IInterBankHelper.narrow(objRef);
+        } catch (NotFound notFound) {
+            interBank = null;
+        }
 
         bankId = Integer.parseInt(args[args.length - 1]);
-        bank = loadBank(interBank, bankId);//new Bank(interBank, bankId);
+        bank = loadBank(interBank, bankId);
 
         objRef = rootpoa.servant_to_reference(bank);
 
@@ -50,7 +57,9 @@ public class BankServer {
         NameComponent path[] = ncRef.to_name(sn);
         ncRef.rebind(path, bankRef);
 
-        interBank.register(bankRef);
+        if (interBank != null) {
+            interBank.register(bankRef);
+        }
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
