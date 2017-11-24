@@ -48,8 +48,6 @@ module BankIDL {
         AccountList getAccountIds(in long clientId);
         void transfer(in long clientId, in long accountIdSrc, in long bankIdDest, in long accountIdDest, in double amount);
 
-        // Préparation de la transaction sans l'exécuter
-        oneway void prepareTransaction(in BankTransaction transaction);
         // Exécution de la transaction
         oneway void executeTransaction(in BankTransaction transaction);
     };

@@ -308,13 +308,6 @@ public class Bank extends IBankPOA implements Serializable {
     }
 
     @Override
-    public void prepareTransaction(BankTransaction transaction) {
-        BankOperation operation = new BankOperation(transaction);
-        TransactionResult result = operation.check(true);
-        this.interBank.registeredTransaction(transaction.id, result);
-    }
-
-    @Override
     public void executeTransaction(BankTransaction transaction) {
         ///System.out.println("La transaction " + transaction.id + " va être exécutée, appuyez sur Entrée pour continuer...");
         ///new Scanner(System.in).nextLine();
