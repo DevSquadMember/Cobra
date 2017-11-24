@@ -1,4 +1,4 @@
-package server.src;
+package server.src.rest;
 
 import javax.xml.bind.annotation.*;
 

@@ -42,28 +42,13 @@ public class BankServer {
         bankId = Integer.parseInt(args[args.length - 1]);
         bank = loadBank(interBank, bankId);//new Bank(interBank, bankId);
 
-        if (bank == null) {
-            System.out.println("After loading, bank is null");
-        }
-
         objRef = rootpoa.servant_to_reference(bank);
 
         IBank bankRef = IBankHelper.narrow(objRef);
-        System.out.println("Bank helper narrowed");
-
-        if (bankRef == null) {
-            System.out.println("BankRef is null");
-        }
-        if (interBank == null) {
-            System.out.println("Interbank is null");
-        }
 
         String sn = bank.bankId() != -1 ? bank.bankId() + ".bank" : "test.bank";
         NameComponent path[] = ncRef.to_name(sn);
         ncRef.rebind(path, bankRef);
-        if (bankRef == null) {
-            System.out.println("BankRef is NOW null");
-        }
 
         interBank.register(bankRef);
 

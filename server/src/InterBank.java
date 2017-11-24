@@ -15,6 +15,8 @@ import static utils.Utils.StateToString;
 
 public class InterBank extends IInterBankPOA implements Serializable {
 
+    private static final long serialVersionUID = 1350092881346729275L;
+
     private int TRANSACTION_TOKEN = 0;
 
     private DateFormat dateFormat;
@@ -45,6 +47,7 @@ public class InterBank extends IInterBankPOA implements Serializable {
         out.writeObject(this.waitingTransactions);
     }
 
+    @SuppressWarnings("unchecked")
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
         TRANSACTION_TOKEN = in.readInt();
         this.transactions = (ArrayList<BankTransaction>) in.readObject();

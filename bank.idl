@@ -41,8 +41,9 @@ module BankIDL {
         readonly attribute long bankId;
         long createClient();
         long openAccount(in long clientId);
-        TransactionResult withdraw(in long clientId,in long accountId, in double amount);
-        TransactionResult deposit(in long clientId,in long accountId, in double amount);
+        TransactionResult closeAccount(in long clientId, in long accountId);
+        TransactionResult withdraw(in long clientId, in long accountId, in double amount);
+        TransactionResult deposit(in long clientId, in long accountId, in double amount);
         double getAccountBalance(in long clientId, in long accountId);
         AccountList getAccountIds(in long clientId);
         void transfer(in long clientId, in long accountIdSrc, in long bankIdDest, in long accountIdDest, in double amount);

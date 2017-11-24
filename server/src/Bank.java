@@ -7,11 +7,6 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
-
-import javax.ws.rs.*;
-import javax.ws.rs.core.*;
 
 import static utils.Utils.ResultToString;
 import static utils.Utils.StateToString;
@@ -65,13 +60,9 @@ public class Bank extends IBankPOA implements Serializable {
         out.writeObject(this.clientAccounts);
         out.writeObject(this.accounts);
         out.writeObject(this.waitingTransactions);
-        /*out.writeObject(this.clientAccounts.size());
-        for (Map.Entry<Integer, ArrayList<Integer>> clientAccount : this.clientAccounts.entrySet()) {
-            out.writeInt(clientAccount.getKey());
-            out.writeObject(clientAccount.getValue());
-        }*/
     }
 
+    @SuppressWarnings("unchecked")
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
         this.id = in.readInt();
         CLIENT_TOKEN = in.readInt();
@@ -79,25 +70,17 @@ public class Bank extends IBankPOA implements Serializable {
         this.clientAccounts = (HashMap<Integer, ArrayList<Integer>>) in.readObject();
         this.accounts = (HashMap<Integer, Account>) in.readObject();
         this.waitingTransactions = (HashMap<Integer, BankTransaction>) in.readObject();
-        /*int size = in.readInt();
-        for (int i = 0 ; i < size ; i++) {
-            int clientId = in.readInt();
-            ArrayList<Integer> accounts = (ArrayList<Integer>) in.readObject();
-            this.clientAccounts.put(clientId, accounts);
-        }*/
     }
 
     private void readObjectNoData() throws ObjectStreamException {
 
     }
 
-    public HashMap<Integer, ArrayList<Integer>> getClientAccounts() {
+    HashMap<Integer, ArrayList<Integer>> getClientAccounts() {
         return clientAccounts;
     }
 
     /** END OF SERIALIZABLE **/
-
-
 
     private boolean isClient(int clientId) {
         return this.clientAccounts.containsKey(clientId);
@@ -106,7 +89,6 @@ public class Bank extends IBankPOA implements Serializable {
     private ArrayList<Integer> getAccounts(int clientId) {
         return this.clientAccounts.get(clientId);
     }
-
 
     private class BankOperation {
         BankTransaction transaction;
@@ -146,10 +128,8 @@ public class Bank extends IBankPOA implements Serializable {
                 this.transaction.result = TransactionResult.ERROR_AMOUNT_INVALID;
             } else if (!clientCheck || isClient(this.clientId)) { // Le client existe
                 // Le compte existe
-                System.out.println("L'id du compte à vérifier est : " + accountId);
                 if (accounts.containsKey(accountId)) {
                     Account account = accounts.get(accountId);
-                    System.out.println("account id is : " + account.getId());
                     // Le compte appartient au client
                     if (!clientCheck || account.hasAccess(this.clientId)) {
                         this.account = account;
@@ -188,6 +168,7 @@ public class Bank extends IBankPOA implements Serializable {
     public int createClient() {
         int clientId = CLIENT_TOKEN;
         CLIENT_TOKEN++;
+        System.out.println("Création du client : " + clientId);
         this.clientAccounts.put(clientId, new ArrayList<Integer>());
         return clientId;
     }
@@ -211,7 +192,28 @@ public class Bank extends IBankPOA implements Serializable {
     }
 
     @Override
+    public TransactionResult closeAccount(int clientId, int accountId) {
+        if (isClient(clientId)) {
+            if (this.accounts.containsKey(accountId)) {
+                Account account = this.accounts.get(accountId);
+                if (account.hasAccess(clientId)) {
+                    this.accounts.remove(accountId);
+                    this.clientAccounts.get(clientId).remove(accountId);
+                    return TransactionResult.SUCCESS;
+                } else {
+                    return TransactionResult.ERROR_ACCESS_DENIED;
+                }
+            } else {
+                return TransactionResult.ERROR_ACCOUNT_INEXISTANT;
+            }
+        } else {
+            return TransactionResult.ERROR_CLIENT_INEXISTANT;
+        }
+    }
+
+    @Override
     public TransactionResult withdraw(int clientId, int accountId, double amount) {
+        System.out.println("Retrait du client " + clientId + " sur le compte " + accountId + " d'un montant de " + amount);
         BankOperation operation = new BankOperation(clientId, accountId, amount, TransactionType.WITHDRAW);
         TransactionResult result = operation.check(true);
         if (result == TransactionResult.SUCCESS)
@@ -221,6 +223,7 @@ public class Bank extends IBankPOA implements Serializable {
 
     @Override
     public TransactionResult deposit(int clientId, int accountId, double amount) {
+        System.out.println("Dépôt du client " + clientId + " sur le compte " + accountId + " d'un montant de " + amount);
         BankOperation operation = new BankOperation(clientId, accountId, amount, TransactionType.DEPOSIT);
         TransactionResult result = operation.check(true);
         if (result == TransactionResult.SUCCESS)
@@ -230,6 +233,7 @@ public class Bank extends IBankPOA implements Serializable {
 
     @Override
     public double getAccountBalance(int clientId, int accountId) {
+        System.out.println("Demande de solde du compte " + accountId);
         // Si le client est à cette banque, et que le compte existe
         if (isClient(clientId) && this.accounts.containsKey(accountId)) {
             Account account = this.accounts.get(accountId);
@@ -243,6 +247,7 @@ public class Bank extends IBankPOA implements Serializable {
 
     @Override
     public int[] getAccountIds(int clientId) {
+        System.out.println("Demande de la liste des comptes du client " + clientId);
         if (isClient(clientId)) {
             ArrayList<Integer> accountIds = this.clientAccounts.get(clientId);
             int[] ids = new int[accountIds.size()];
@@ -260,6 +265,7 @@ public class Bank extends IBankPOA implements Serializable {
     public void transfer(int clientId, int accountIdSrc, int bankIdDest, int accountIdDest, double amount) {
         // Transfert intrabancaire
         if (bankIdDest == bankId()) {
+            System.out.println("Transfert intrabancaire du compte " + accountIdSrc + " vers " + accountIdDest + " d'un montant de " + amount);
             BankOperation opWithdraw = new BankOperation(clientId, accountIdSrc, amount, TransactionType.WITHDRAW);
             BankOperation opDeposit = new BankOperation(clientId, accountIdDest, amount, TransactionType.DEPOSIT);
             TransactionResult result = opWithdraw.check(true);
@@ -308,8 +314,8 @@ public class Bank extends IBankPOA implements Serializable {
 
     @Override
     public void executeTransaction(BankTransaction transaction) {
-        System.out.println("La transaction " + transaction.id + " va être exécutée, appuyez sur Entrée pour continuer...");
-        //new Scanner(System.in).nextLine();
+        ///System.out.println("La transaction " + transaction.id + " va être exécutée, appuyez sur Entrée pour continuer...");
+        ///new Scanner(System.in).nextLine();
 
         if (transaction.state == TransactionState.CANCELED) {
             System.out.println("Transaction " + transaction.id + " annulée : " + ResultToString(transaction.result));
@@ -329,59 +335,5 @@ public class Bank extends IBankPOA implements Serializable {
             System.out.println("Transaction " + transaction.id + " effectuée");
             this.waitingTransactions.remove(transaction.id);
         }
-    }
-
-    /** PARTIE REST **/
-
-    @GET
-    @Path("/getClientId")
-    @Produces("text/plain")
-    public int getClientIdRest() {
-        return this.createClient();
-    }
-
-    @GET
-    @Path("/getNewAccount/{clientId}")
-    @Produces("text/plain")
-    public int getNewAccountRest(@PathParam("clientId") int clientId) {
-        return this.openAccount(clientId);
-    }
-
-    @POST
-    @Path("/deposit")
-    @Consumes(MediaType.TEXT_XML)
-    @Produces("text/plain")
-    public TransactionResult depositRest(TransferObject t) {
-        return this.deposit(t.clientId, t.accountId, t.amount);
-    }
-
-    @POST
-    @Path("/withdraw")
-    @Consumes(MediaType.TEXT_XML)
-    @Produces("text/plain")
-    public TransactionResult withdrawRest(TransferObject t) {
-        return this.withdraw(t.clientId, t.accountId, t.amount);
-    }
-
-    @GET
-    @Path("/getAccountId/{clientId}")
-    @Produces("text/plain")
-    public int[] getAccountIdsRest(@PathParam("clientId") int clientId) {
-        return this.getAccountIds(clientId);
-    }
-
-    @GET
-    @Path("/getBalance/{clientId}/{accountId}")
-    @Produces("text/plain")
-    public double getBalanceRest(@PathParam("clientId") int clientId,@PathParam("accountId") int accountId) {
-        return getAccountBalance(clientId, accountId);
-    }
-
-    @POST
-    @Path("/transfer")
-    @Consumes(MediaType.TEXT_XML)
-    @Produces("text/plain")
-    public void transferRest(TransactionObject t) {
-        transfer(t.clientId, t.accountIdSrc, t.bankIdDest, t.accountIdDest, t.amount);
     }
 }

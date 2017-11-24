@@ -9,10 +9,12 @@ import java.util.Map;
 
 class DataPersistent {
 
-    private static String INTERBANK_FILENAME = "interbank.ser";
+    private static String SAVE_DIRECTORY = "save";
+
+    private static String INTERBANK_FILENAME = SAVE_DIRECTORY + "/interbank.ser";
 
     private static String getBankFileName(int bankId) {
-        return "bank" + bankId + ".ser";
+        return SAVE_DIRECTORY + "/bank" + bankId + ".ser";
     }
 
     static Bank loadBank(IInterBank interBank, int bankId) {
@@ -57,6 +59,10 @@ class DataPersistent {
     private static void save(Serializable serializable, String filename) {
         ObjectOutputStream oos = null;
         try {
+            File directory = new File(SAVE_DIRECTORY);
+            if (!directory.isDirectory()) {
+                directory.mkdir();
+            }
             final FileOutputStream file = new FileOutputStream(filename);
             oos = new ObjectOutputStream(file);
             oos.writeObject(serializable);

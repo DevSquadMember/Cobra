@@ -1,16 +1,26 @@
 ifeq (run_bank,$(firstword $(MAKECMDGOALS)))
-  # use the rest as arguments for "run"
+  # use the rest as arguments for "run_bank"
   RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
   # ...and turn them into do-nothing targets
   $(eval $(RUN_ARGS):;@:)
 endif
 
 ifeq (run_bank_persistent,$(firstword $(MAKECMDGOALS)))
-  # use the rest as arguments for "run"
   RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-  # ...and turn them into do-nothing targets
   $(eval $(RUN_ARGS):;@:)
 endif
+
+ifeq (run_bank_rest,$(firstword $(MAKECMDGOALS)))
+  RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  $(eval $(RUN_ARGS):;@:)
+endif
+
+ifeq (run_client_rest,$(firstword $(MAKECMDGOALS)))
+  RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  $(eval $(RUN_ARGS):;@:)
+endif
+
+MAKEFLAGS += -s
 
 RESTLET        := .
 HTTPCOMPONENTS := .
@@ -32,14 +42,17 @@ ORBD=orbd -ORBInitialPort ${ORB_INITIAL_PORT} -serverPollingTime 200
 SERVERTOOL=servertool
 
 compile:
-	idlj -fall bank.idl
-	#idlj -fall -pkgPrefix IBank server.src bank.idl
-	#idlj -fclient -pkgPrefix IBank client.src bank.idl
+	@echo "Compilation de l'IDL en Java en cours..."
+	@idlj -fall bank.idl
 
 compile_code:
-	javac BankIDL/*.java
-	javac -cp $(CLASSPATH) client/src/*.java
-	javac -cp $(CLASSPATH) server/src/*.java
+	@echo "Compilation du code en cours..."
+	@javac -Xlint:none BankIDL/*.java
+	@javac -Xlint:unchecked -cp $(CLASSPATH) utils/*.java
+	@javac -Xlint:unchecked -cp $(CLASSPATH) client/src/*.java
+	@javac -Xlint:unchecked -cp $(CLASSPATH) server/src/*.java
+	@javac -Xlint:unchecked -cp $(CLASSPATH) client/src/rest/*.java
+	@javac -Xlint:unchecked -cp $(CLASSPATH) server/src/rest/*.java
 
 run_nameserver:
 	tnameserv -ORBInitialPort $(ORB_INITIAL_PORT)
@@ -58,6 +71,9 @@ servertool_bank:
 run_bank:
 	java server.src.BankServer -ORBInitRef NameService=corbaloc::localhost:1050/NameService $(RUN_ARGS)
 
+run_bank_rest:
+	java -cp $(CLASSPATH) server.src.rest.BankRESTServer -ORBInitRef NameService=corbaloc::localhost:1050/NameService $(RUN_ARGS)
+
 run_bank_persistent:
 	java server.src.BankServerPersistent -ORBInitRef NameService=corbaloc::localhost:1050/NameService $(RUN_ARGS)
 
@@ -71,14 +87,18 @@ run_client_persistent:
 	java client.src.ClientPersistent -ORBInitRef NameService=corbaloc::localhost:1050/NameService
 
 run_client_rest:
-	java client.src.ClientRest -ORBInitRef NameService=corbaloc::localhost:1050/NameService
+	java -cp $(CLASSPATH) client.src.rest.ClientRest
 
 test:
 	java -cp $(CLASSPATH) client.src.TestRunner -ORBInitRef NameService=corbaloc::localhost:1050/NameService
 
 clean:
+	rm utils/*.class
 	rm client/src/*.class
 	rm server/src/*.class
+	rm client/src/rest/*.class
+	rm server/src/rest/*.class
 
 mrproper: clean
 	rm -rf BankIDL
+	rm -rf save

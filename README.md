@@ -9,13 +9,23 @@ Compiler le code Java : `make compile_code`
 ## Exécution & Tests
 
 ### Sans persistence
-Lancer le serveur de nom (Nameserver) : `make run_nameserver`
+- Lancer le serveur de nom (Nameserver) : `make run_nameserver`
+- Lancer le serveur Interbank : `make run_server`
+- Lancer un serveur bancaire : `make run_bank <BANK_ID>`
+- Lancer le client : `make run_client`
 
-Lancer le serveur Interbank : `make run_server`
+### REST
 
-Lancer un serveur bancaire : `make run_bank <BANK_ID>`
+La manipulation est la même que sans persistence, on va seulement 
+rajouter un serveur bancaire REST qui récupère une référence vers
+la banque dont le numéro lui est passé en paramètre et joue le rôle
+d'un serveur REST pour le client qui ira s'y connecter.
 
-Lancer le client : `make run_client`
+- Lancer le serveur de nom (Nameserver) : `make run_nameserver`
+- Lancer le serveur Interbank : `make run_server`
+- Lancer un serveur bancaire : `make run_bank <BANK_ID>`
+- Lancer un serveur REST : `make run_bank_rest <BANK_ID>`
+- Lancer le client : `make run_client_rest`
 
 ### Avec persistence
 Lancer le serveur orbd : `make run_orbd`

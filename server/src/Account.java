@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 public class Account implements Serializable {
 
+    private static final long serialVersionUID = 1350092881729723535L;
+
     /** Identifiant unique du compte */
     private int id;
 
