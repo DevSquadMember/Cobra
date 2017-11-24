@@ -41,6 +41,10 @@ ORBD=orbd -ORBInitialPort ${ORB_INITIAL_PORT} -serverPollingTime 200
 
 SERVERTOOL=servertool
 
+all: build
+
+build: compile compile_code
+
 compile:
 	@echo "Compilation de l'IDL en Java en cours..."
 	@idlj -fall bank.idl
@@ -93,11 +97,13 @@ test:
 	java -cp $(CLASSPATH) client.src.TestRunner -ORBInitRef NameService=corbaloc::localhost:1050/NameService
 
 clean:
-	rm utils/*.class
-	rm client/src/*.class
-	rm server/src/*.class
-	rm client/src/rest/*.class
-	rm server/src/rest/*.class
+	echo "Suppression des fichiers Java compilés ainsi que des sauvegardes des serveurs"
+	rm -f utils/*.class
+	rm -f client/src/*.class
+	rm -f server/src/*.class
+	rm -f client/src/rest/*.class
+	rm -f server/src/rest/*.class
+	rm -f save/*.ser
 
 mrproper: clean
 	rm -rf BankIDL
