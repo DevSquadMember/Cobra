@@ -70,6 +70,9 @@ run_client:
 run_client_persistent:
 	java client.src.ClientPersistent -ORBInitRef NameService=corbaloc::localhost:1050/NameService
 
+run_client_rest:
+	java client.src.ClientRest -ORBInitRef NameService=corbaloc::localhost:1050/NameService
+
 test:
 	java -cp $(CLASSPATH) client.src.TestRunner -ORBInitRef NameService=corbaloc::localhost:1050/NameService
 
