@@ -9,7 +9,14 @@ import org.omg.CosNaming.NamingContextExtHelper;
 import org.omg.PortableServer.POA;
 import org.omg.PortableServer.POAHelper;
 
+import static server.src.DataPersistent.loadInterBank;
+import static server.src.DataPersistent.saveBank;
+import static server.src.DataPersistent.saveInterBank;
+
 public class Server {
+
+    private static InterBank interBank;
+
     public static void main(String args[]) throws Exception {
         // Initialisation d'ORB
         ORB orb = ORB.init(args, null);
@@ -21,9 +28,7 @@ public class Server {
         objRef = orb.resolve_initial_references("NameService");
         NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
 
-
-        /** CODE APPLICATIF DU SERVER **/
-        InterBank interBank = new InterBank();
+        interBank = loadInterBank();
 
         objRef = rootpoa.servant_to_reference(interBank);
 
@@ -31,6 +36,12 @@ public class Server {
 
         NameComponent path[ ] = ncRef.to_name("interbank.interbank");
         ncRef.rebind(path, bankRef);
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                saveInterBank(interBank);
+            }
+        });
 
         orb.run();
     }

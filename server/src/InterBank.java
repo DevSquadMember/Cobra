@@ -1,9 +1,10 @@
 package server.src;
 
 import BankIDL.*;
-import org.omg.CORBA.ORB;
-import org.omg.PortableInterceptor.SUCCESSFUL;
 
+import java.io.IOException;
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -12,16 +13,14 @@ import java.util.HashMap;
 
 import static utils.Utils.StateToString;
 
-public class InterBank extends IInterBankPOA {
+public class InterBank extends IInterBankPOA implements Serializable {
 
-    private ORB orb;
+    private int TRANSACTION_TOKEN = 0;
 
-    private static int TRANSACTION_TOKEN = 0;
-
-    private DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+    private DateFormat dateFormat;
 
     // Liste des banques connectées à l'InterBank
-    private HashMap<Integer, IBank> banks = new HashMap<Integer, IBank>();
+    private HashMap<Integer, IBank> banks;
 
     // Historique des transactions effectuées
     private ArrayList<BankTransaction> transactions = new ArrayList<BankTransaction>();
@@ -29,9 +28,36 @@ public class InterBank extends IInterBankPOA {
     // Transactions en cours d'exécution : en attente d'une réponse de la part de la banque
     private ArrayList<BankTransaction> waitingTransactions = new ArrayList<BankTransaction>();
 
-    InterBank(ORB orb) {
-        this.orb = orb;
+    InterBank() {
+        init();
     }
+
+    private void init() {
+        dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        banks = new HashMap<Integer, IBank>();
+    }
+
+    /** SERIALIZABLE **/
+
+    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+        out.writeInt(TRANSACTION_TOKEN);
+        out.writeObject(this.transactions);
+        out.writeObject(this.waitingTransactions);
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        TRANSACTION_TOKEN = in.readInt();
+        this.transactions = (ArrayList<BankTransaction>) in.readObject();
+        this.waitingTransactions = (ArrayList<BankTransaction>) in.readObject();
+
+        init();
+    }
+
+    private void readObjectNoData() throws ObjectStreamException {
+
+    }
+
+    /** END OF SERIALIZABLE **/
 
     private String getDateToken() {
         return dateFormat.format(new Date());
@@ -46,11 +72,6 @@ public class InterBank extends IInterBankPOA {
             i++;
         }
         return iBanks;
-    }
-
-    @Override
-    public void shutdown() {
-        this.orb.shutdown(false);
     }
 
     @Override

@@ -33,7 +33,7 @@ public class Client {
         org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
         NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
 
-        objRef = ncRef.resolve_str("bank.bank");
+        objRef = ncRef.resolve_str("1.bank");
 
         this.bank = IBankHelper.narrow(objRef);
     }

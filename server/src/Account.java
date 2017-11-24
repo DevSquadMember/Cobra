@@ -1,6 +1,8 @@
 package server.src;
 
-public class Account {
+import java.io.Serializable;
+
+public class Account implements Serializable {
 
     /** Identifiant unique du compte */
     private int id;

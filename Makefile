@@ -21,13 +21,13 @@ RESTLET_CP := $(RESTLET)/lib/org.restlet.jar:$(RESTLET)/lib/org.restlet.ext.jaxr
 
 CLASSPATH = .:$(RESTLET_CP):$(HTTPCOMPONENTS_CP):./lib/junit-4.10.jar
 
-ORB_INITIAL_PORT=2809
+ORB_INITIAL_PORT=1050
 ORB_INITIAL_HOST=localhost
-ORB_ACTIVATION_PORT=2810
+ORB_ACTIVATION_PORT=1049
 
 ORB_PROPS=-Dorg.omg.CORBA.ORBInitialHost=$(ORB_INITIAL_HOST) -Dorg.omg.CORBA.ORBInitialPort=$(ORB_INITIAL_PORT)
 
-ORBD=orbd -ORBInitialPort ${ORB_INITIAL_PORT} -port ${ORB_ACTIVATION_PORT} -serverPollingTime 200 -serverStartupDelay 1000
+ORBD=orbd -ORBInitialPort ${ORB_INITIAL_PORT} -serverPollingTime 200
 
 SERVERTOOL=servertool
 
@@ -42,29 +42,36 @@ compile_code:
 	javac -cp $(CLASSPATH) server/src/*.java
 
 run_nameserver:
-	tnameserv -ORBInitialPort 2809
+	tnameserv -ORBInitialPort $(ORB_INITIAL_PORT)
 
 run_orbd:
 	$(ORBD)
 
 servertool:
-	# Commande à taper : register -server server.src.Server -applicationName interbank -classpath .
+	# Commande à taper : register -server server.src.ServerPersistent -applicationName s1 -classpath .
+	$(SERVERTOOL) -ORBInitialPort $(ORB_INITIAL_PORT)
+
+servertool_bank:
+	# Commande à taper : register -server server.src.BankServerPersistent -applicationName bank -classpath . -args 1
 	$(SERVERTOOL) -ORBInitialPort $(ORB_INITIAL_PORT)
 
 run_bank:
-	java server.src.BankServer -ORBInitRef NameService=corbaloc::localhost:2809/NameService $(RUN_ARGS)
+	java server.src.BankServer -ORBInitRef NameService=corbaloc::localhost:1050/NameService $(RUN_ARGS)
 
 run_bank_persistent:
-	java server.src.BankServerPersistent -ORBInitRef NameService=corbaloc::localhost:2809/NameService $(RUN_ARGS)
+	java server.src.BankServerPersistent -ORBInitRef NameService=corbaloc::localhost:1050/NameService $(RUN_ARGS)
 
 run_server:
-	java server.src.Server -ORBInitRef NameService=corbaloc::localhost:2809/NameService
+	java server.src.Server -ORBInitRef NameService=corbaloc::localhost:1050/NameService
 
 run_client:
-	java client.src.Client -ORBInitRef NameService=corbaloc::localhost:2809/NameService
+	java client.src.Client -ORBInitRef NameService=corbaloc::localhost:1050/NameService
+
+run_client_persistent:
+	java client.src.ClientPersistent -ORBInitRef NameService=corbaloc::localhost:1050/NameService
 
 test:
-	java -cp $(CLASSPATH) client.src.TestRunner -ORBInitRef NameService=corbaloc::localhost:2809/NameService
+	java -cp $(CLASSPATH) client.src.TestRunner -ORBInitRef NameService=corbaloc::localhost:1050/NameService
 
 clean:
 	rm client/src/*.class

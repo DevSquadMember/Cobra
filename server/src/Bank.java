@@ -2,8 +2,12 @@ package server.src;
 
 import BankIDL.*;
 
+import java.io.IOException;
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 import javax.ws.rs.*;
@@ -12,9 +16,11 @@ import javax.ws.rs.core.*;
 import static utils.Utils.ResultToString;
 import static utils.Utils.StateToString;
 
-public class Bank extends IBankPOA {
+public class Bank extends IBankPOA implements Serializable {
 
-    private IInterBank interBank;
+    private static final long serialVersionUID = 1350092881346723535L;
+
+    transient private IInterBank interBank;
 
     private static int ACCOUNT_TOKEN = 0;
     private static int CLIENT_TOKEN = 0;
@@ -26,15 +32,15 @@ public class Bank extends IBankPOA {
      * Liste des clients de la banque
      * Paire <id client, liste des ids de compte></id>
      */
-    private HashMap<Integer, ArrayList<Integer>> clientAccounts;
+    private HashMap<Integer, ArrayList<Integer>> clientAccounts = new HashMap<Integer, ArrayList<Integer>>();
 
     /**
      * Liste des comptes dans cette banque.
      * Paire <id de compte> <Compte>
      */
-    private HashMap<Integer, Account> accounts;
+    private HashMap<Integer, Account> accounts = new HashMap<Integer, Account>();
 
-    private HashMap<Integer, BankTransaction> waitingTransactions;
+    private HashMap<Integer, BankTransaction> waitingTransactions = new HashMap<Integer, BankTransaction>();
 
     Bank(IInterBank interBank) {
         this(interBank, BANK_TOKEN++);
@@ -44,10 +50,54 @@ public class Bank extends IBankPOA {
         this.interBank = interBank;
         System.out.println("Connectée en tant que banque " + id);
         this.id = id;
-        this.clientAccounts = new HashMap<Integer, ArrayList<Integer>>();
-        this.accounts = new HashMap<Integer, Account>();
-        this.waitingTransactions = new HashMap<Integer, BankTransaction>();
     }
+
+    public void setInterBank(IInterBank interBank) {
+        this.interBank = interBank;
+    }
+
+    /** SERIALIZABLE **/
+
+    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+        out.writeInt(this.id);
+        out.writeInt(CLIENT_TOKEN);
+        out.writeInt(ACCOUNT_TOKEN);
+        out.writeObject(this.clientAccounts);
+        out.writeObject(this.accounts);
+        out.writeObject(this.waitingTransactions);
+        /*out.writeObject(this.clientAccounts.size());
+        for (Map.Entry<Integer, ArrayList<Integer>> clientAccount : this.clientAccounts.entrySet()) {
+            out.writeInt(clientAccount.getKey());
+            out.writeObject(clientAccount.getValue());
+        }*/
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        this.id = in.readInt();
+        CLIENT_TOKEN = in.readInt();
+        ACCOUNT_TOKEN = in.readInt();
+        this.clientAccounts = (HashMap<Integer, ArrayList<Integer>>) in.readObject();
+        this.accounts = (HashMap<Integer, Account>) in.readObject();
+        this.waitingTransactions = (HashMap<Integer, BankTransaction>) in.readObject();
+        /*int size = in.readInt();
+        for (int i = 0 ; i < size ; i++) {
+            int clientId = in.readInt();
+            ArrayList<Integer> accounts = (ArrayList<Integer>) in.readObject();
+            this.clientAccounts.put(clientId, accounts);
+        }*/
+    }
+
+    private void readObjectNoData() throws ObjectStreamException {
+
+    }
+
+    public HashMap<Integer, ArrayList<Integer>> getClientAccounts() {
+        return clientAccounts;
+    }
+
+    /** END OF SERIALIZABLE **/
+
+
 
     private boolean isClient(int clientId) {
         return this.clientAccounts.containsKey(clientId);
@@ -163,7 +213,7 @@ public class Bank extends IBankPOA {
     @Override
     public TransactionResult withdraw(int clientId, int accountId, double amount) {
         BankOperation operation = new BankOperation(clientId, accountId, amount, TransactionType.WITHDRAW);
-        TransactionResult result = operation.check();
+        TransactionResult result = operation.check(true);
         if (result == TransactionResult.SUCCESS)
             operation.execute();
         return result;
@@ -172,7 +222,7 @@ public class Bank extends IBankPOA {
     @Override
     public TransactionResult deposit(int clientId, int accountId, double amount) {
         BankOperation operation = new BankOperation(clientId, accountId, amount, TransactionType.DEPOSIT);
-        TransactionResult result = operation.check();
+        TransactionResult result = operation.check(true);
         if (result == TransactionResult.SUCCESS)
             operation.execute();
         return result;
@@ -208,55 +258,58 @@ public class Bank extends IBankPOA {
 
     @Override
     public void transfer(int clientId, int accountIdSrc, int bankIdDest, int accountIdDest, double amount) {
-        System.out.println("Préparation du transfert du client " + clientId + " compte " + accountIdSrc + " vers le compte " +
-                accountIdDest + " de la banque " + bankIdDest + " montant : " + amount);
-        BankOperation operation = new BankOperation(clientId, accountIdSrc, amount, TransactionType.WITHDRAW);
-        TransactionResult result = operation.check(true);
-        if (result == TransactionResult.SUCCESS) {
-            BankTransaction transaction = new BankTransaction();
-            transaction.id = -1;
-            transaction.bankIdSrc = bankId();
-            transaction.bankIdDest = bankIdDest;
-            transaction.accountIdSrc = accountIdSrc;
-            transaction.accountIdDest = accountIdDest;
-            transaction.amount = amount;
-            transaction.type = TransactionType.TRANSFER;
-            transaction.result = TransactionResult.SUCCESS;
-            transaction.state = TransactionState.WAITING;
-            transaction.executionDate = "";
-            transaction.id = this.interBank.registerTransaction(transaction);
-            this.waitingTransactions.put(transaction.id, transaction);
-        } else {
-            System.out.println("Impossible d'effectuer la transaction - " + ResultToString(result));
-        }
-        /*BankOperation opWithdraw = new BankOperation(clientId, accountIdSrc, amount, Operation.WITHDRAW);
-        BankOperation opDeposit = new BankOperation(clientId, accountIdDest, amount, Operation.DEPOSIT, false);
-        TransactionResult result = opWithdraw.check();
-        // Si le retrait est possible
-        if (result == TransactionResult.SUCCESS) {
-            result = opDeposit.check();
-            // Et que le dépôt également
+        // Transfert intrabancaire
+        if (bankIdDest == bankId()) {
+            BankOperation opWithdraw = new BankOperation(clientId, accountIdSrc, amount, TransactionType.WITHDRAW);
+            BankOperation opDeposit = new BankOperation(clientId, accountIdDest, amount, TransactionType.DEPOSIT);
+            TransactionResult result = opWithdraw.check(true);
+            // Si le retrait est possible
             if (result == TransactionResult.SUCCESS) {
-                opWithdraw.execute();
-                opDeposit.execute();
-            } else if (result == TransactionResult.ERROR_ACCOUNT_INEXISTANT) {
-                result = TransactionResult.ERROR_ACCOUNT_DEST_INEXISTANT;
+                result = opDeposit.check();
+                // Et que le dépôt également
+                if (result == TransactionResult.SUCCESS) {
+                    opWithdraw.execute();
+                    opDeposit.execute();
+                } else if (result == TransactionResult.ERROR_ACCOUNT_INEXISTANT) {
+                    result = TransactionResult.ERROR_ACCOUNT_DEST_INEXISTANT;
+                }
+            }
+        } else {
+            System.out.println("Préparation du transfert du client " + clientId + " compte " + accountIdSrc + " vers le compte " +
+                    accountIdDest + " de la banque " + bankIdDest + " montant : " + amount);
+            BankOperation operation = new BankOperation(clientId, accountIdSrc, amount, TransactionType.WITHDRAW);
+            TransactionResult result = operation.check(true);
+            if (result == TransactionResult.SUCCESS) {
+                BankTransaction transaction = new BankTransaction();
+                transaction.id = -1;
+                transaction.bankIdSrc = bankId();
+                transaction.bankIdDest = bankIdDest;
+                transaction.accountIdSrc = accountIdSrc;
+                transaction.accountIdDest = accountIdDest;
+                transaction.amount = amount;
+                transaction.type = TransactionType.TRANSFER;
+                transaction.result = TransactionResult.SUCCESS;
+                transaction.state = TransactionState.WAITING;
+                transaction.executionDate = "";
+                transaction.id = this.interBank.registerTransaction(transaction);
+                this.waitingTransactions.put(transaction.id, transaction);
+            } else {
+                System.out.println("Impossible d'effectuer la transaction - " + ResultToString(result));
             }
         }
-        return result;*/
     }
 
     @Override
     public void prepareTransaction(BankTransaction transaction) {
         BankOperation operation = new BankOperation(transaction);
-        TransactionResult result = operation.check();
+        TransactionResult result = operation.check(true);
         this.interBank.registeredTransaction(transaction.id, result);
     }
 
     @Override
     public void executeTransaction(BankTransaction transaction) {
         System.out.println("La transaction " + transaction.id + " va être exécutée, appuyez sur Entrée pour continuer...");
-        new Scanner(System.in).nextLine();
+        //new Scanner(System.in).nextLine();
 
         if (transaction.state == TransactionState.CANCELED) {
             System.out.println("Transaction " + transaction.id + " annulée : " + ResultToString(transaction.result));

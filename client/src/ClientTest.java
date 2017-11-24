@@ -1,7 +1,8 @@
 package client.src;
 
 import BankIDL.IBank;
-import BankIDL.OperationResult;
+import BankIDL.TransactionResult;
+import BankIDL.TransactionResult;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.omg.CORBA.ORBPackage.InvalidName;
@@ -18,7 +19,7 @@ public class ClientTest {
     public static void load() {
         System.out.println("Test des accès à la banque côté client");
         try {
-            Client client = new Client(new String[] {"-ORBInitRef", "NameService=corbaloc::localhost:2809/NameService"});
+            Client client = new Client(new String[] {"-ORBInitRef", "NameService=corbaloc::localhost:1050/NameService"});
             bank = client.bank;
         } catch (InvalidName invalidName) {
             invalidName.printStackTrace();
@@ -47,7 +48,7 @@ public class ClientTest {
         int client1 = -1;
         int account1 = bank.openAccount(client1);
 
-        assertEquals(bank.deposit(client1, account1, 100), OperationResult.ERROR_CLIENT_INEXISTANT);
+        assertEquals(bank.deposit(client1, account1, 100), TransactionResult.ERROR_CLIENT_INEXISTANT);
         System.out.println(" - OK");
     }
 
@@ -57,7 +58,7 @@ public class ClientTest {
         int client1 = bank.createClient();
         int account1 = -1;
 
-        assertEquals(bank.deposit(client1, account1, 100), OperationResult.ERROR_ACCOUNT_INEXISTANT);
+        assertEquals(bank.deposit(client1, account1, 100), TransactionResult.ERROR_ACCOUNT_INEXISTANT);
         System.out.println(" - OK");
     }
 
@@ -73,8 +74,8 @@ public class ClientTest {
         assertEquals(bank.getAccountBalance(client1, account1), 0., 0.);
         assertEquals(bank.getAccountBalance(client2, account2), 0., 0.);
 
-        assertEquals(bank.deposit(client1, account2, 100), OperationResult.ERROR_ACCESS_DENIED);
-        assertEquals(bank.deposit(client2, account1, 100), OperationResult.ERROR_ACCESS_DENIED);
+        assertEquals(bank.deposit(client1, account2, 100), TransactionResult.ERROR_ACCESS_DENIED);
+        assertEquals(bank.deposit(client2, account1, 100), TransactionResult.ERROR_ACCESS_DENIED);
 
         assertEquals(bank.getAccountBalance(client1, account1), 0., 0.);
         assertEquals(bank.getAccountBalance(client2, account2), 0., 0.);
@@ -87,10 +88,10 @@ public class ClientTest {
         int client1 = bank.createClient();
         int account1 = bank.openAccount(client1);
 
-        assertEquals(bank.deposit(client1, account1, -3), OperationResult.ERROR_AMOUNT_INVALID);
-        assertEquals(bank.deposit(client1, account1, 0), OperationResult.ERROR_AMOUNT_INVALID);
-        assertEquals(bank.withdraw(client1, account1, -10), OperationResult.ERROR_AMOUNT_INVALID);
-        assertEquals(bank.withdraw(client1, account1, 0), OperationResult.ERROR_AMOUNT_INVALID);
+        assertEquals(bank.deposit(client1, account1, -3), TransactionResult.ERROR_AMOUNT_INVALID);
+        assertEquals(bank.deposit(client1, account1, 0), TransactionResult.ERROR_AMOUNT_INVALID);
+        assertEquals(bank.withdraw(client1, account1, -10), TransactionResult.ERROR_AMOUNT_INVALID);
+        assertEquals(bank.withdraw(client1, account1, 0), TransactionResult.ERROR_AMOUNT_INVALID);
         System.out.println(" - OK");
     }
 
@@ -101,10 +102,10 @@ public class ClientTest {
         int account1 = bank.openAccount(client1);
 
         assertEquals(bank.getAccountBalance(client1, account1), 0., 0.);
-        assertEquals(bank.deposit(client1, account1, 50), OperationResult.SUCCESS);
+        assertEquals(bank.deposit(client1, account1, 50), TransactionResult.SUCCESS);
         assertEquals(bank.getAccountBalance(client1, account1), 50., 0.);
 
-        assertEquals(bank.withdraw(client1, account1, 20), OperationResult.SUCCESS);
+        assertEquals(bank.withdraw(client1, account1, 20), TransactionResult.SUCCESS);
         assertEquals(bank.getAccountBalance(client1, account1), 30., 0.);
         System.out.println(" - OK");
     }

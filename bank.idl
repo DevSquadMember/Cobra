@@ -57,8 +57,6 @@ module BankIDL {
         typedef sequence <IBank> IBanks;
         readonly attribute IBanks banks;
 
-        oneway void shutdown();
-
         // Enregistrer une banque dans l'interbank
         void register(in IBank bank);
 
